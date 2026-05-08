@@ -21,13 +21,47 @@ public class WaitUtils {
         return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 
+    public WebElement waitForAnyVisibility(By... locators) {
+        return wait.until(driver -> {
+            for (By locator : locators) {
+                for (WebElement element : driver.findElements(locator)) {
+                    if (element.isDisplayed()) {
+                        return element;
+                    }
+                }
+            }
+            return null;
+        });
+    }
+
     public WebElement waitForClickable(By locator) {
         return wait.until(ExpectedConditions.elementToBeClickable(locator));
+    }
+
+    public WebElement waitForAnyClickable(By... locators) {
+        return wait.until(driver -> {
+            for (By locator : locators) {
+                for (WebElement element : driver.findElements(locator)) {
+                    if (element.isDisplayed() && element.isEnabled()) {
+                        return element;
+                    }
+                }
+            }
+            return null;
+        });
     }
 
     public boolean isVisible(By locator) {
         try {
             return waitForVisibility(locator).isDisplayed();
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    public boolean isAnyVisible(By... locators) {
+        try {
+            return waitForAnyVisibility(locators).isDisplayed();
         } catch (TimeoutException e) {
             return false;
         }

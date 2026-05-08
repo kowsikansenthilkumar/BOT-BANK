@@ -10,6 +10,7 @@ import java.time.Duration;
 
 public final class DriverFactory {
     private static final ThreadLocal<WebDriver> DRIVER = new ThreadLocal<>();
+    private static boolean chromeDriverSetupComplete = false;
 
     private DriverFactory() {
     }
@@ -26,7 +27,7 @@ public final class DriverFactory {
             throw new IllegalArgumentException("Unsupported browser: " + browser + ". Only chrome is configured.");
         }
 
-        WebDriverManager.chromedriver().setup();
+        setupChromeDriver();
         ChromeOptions options = new ChromeOptions();
         if (headless) {
             options.addArguments("--headless=new");
@@ -41,6 +42,13 @@ public final class DriverFactory {
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(implicitWait));
         driver.manage().window().maximize();
         DRIVER.set(driver);
+    }
+
+    private static synchronized void setupChromeDriver() {
+        if (!chromeDriverSetupComplete) {
+            WebDriverManager.chromedriver().setup();
+            chromeDriverSetupComplete = true;
+        }
     }
 
     public static WebDriver getDriver() {

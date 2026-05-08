@@ -1,43 +1,85 @@
 package com.bankbot.tests;
 
-import com.bankbot.base.BaseTest;
+import com.bankbot.pages.HomePage;
 import com.bankbot.pages.LoginPage;
+import com.bankbot.utils.ConfigReader;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class LoginTest extends BaseTest {
+public class LoginTest extends BankBotTestBase {
 
-    @Test(dataProvider = "loginData")
-    public void verifyLogin(String username, String password, boolean validCredentials) {
+    @Test
+    public void TC_LOGIN_001_loginWithValidManagerCredentials() {
         LoginPage loginPage = new LoginPage(getDriver());
 
-        loginPage.login(username, password);
+        loginPage.login(ConfigReader.get("manager.username"), ConfigReader.get("manager.password"));
 
-        if (validCredentials) {
-            Assert.assertTrue(loginPage.isLoginSuccessful(), "Expected login success message.");
-            Assert.assertEquals(loginPage.getSuccessMessage(), "Login successful");
-        } else {
-            Assert.assertTrue(loginPage.isLoginErrorDisplayed(), "Expected login error message.");
-            Assert.assertEquals(loginPage.getErrorMessage(), "Invalid username or password");
-        }
+        Assert.assertTrue(loginPage.isLoginSuccessful(), "User should login successfully.");
+        Assert.assertEquals(loginPage.getSuccessMessage(), "Login successful");
     }
 
-    @DataProvider(name = "loginData")
-    public Object[][] loginData() {
-        return new Object[][]{
-                {"standard_user", "secret_sauce", true},
-                {"standard_user", "secret_sauce", true},
-                {"standard_user", "secret_sauce", true},
-                {"standard_user", "secret_sauce", true},
-                {"standard_user", "secret_sauce", true},
-                {"standard_user", "secret_sauce", true},
-                {"locked_user", "wrong_password", false},
-                {"problem_user", "bad_password", false},
-                {"", "secret_sauce", false},
-                {"standard_user", "", false},
-                {"", "", false},
-                {"admin", "admin123", false}
-        };
+    @Test
+    public void TC_LOGIN_002_loginWithInvalidUsername() {
+        LoginPage loginPage = new LoginPage(getDriver());
+
+        loginPage.login("invalid_manager", ConfigReader.get("manager.password"));
+
+        Assert.assertTrue(loginPage.isLoginErrorDisplayed(), "Error message should display for invalid username.");
+    }
+
+    @Test
+    public void TC_LOGIN_003_loginWithInvalidPassword() {
+        LoginPage loginPage = new LoginPage(getDriver());
+
+        loginPage.login(ConfigReader.get("manager.username"), "invalid_password");
+
+        Assert.assertTrue(loginPage.isLoginErrorDisplayed(), "Error message should display for invalid password.");
+    }
+
+    @Test
+    public void TC_LOGIN_004_loginWithBlankUsername() {
+        LoginPage loginPage = new LoginPage(getDriver());
+
+        loginPage.login("", ConfigReader.get("manager.password"));
+
+        Assert.assertTrue(loginPage.isUsernameValidationDisplayed(), "Username validation message should appear.");
+    }
+
+    @Test
+    public void TC_LOGIN_005_loginWithBlankPassword() {
+        LoginPage loginPage = new LoginPage(getDriver());
+
+        loginPage.login(ConfigReader.get("manager.username"), "");
+
+        Assert.assertTrue(loginPage.isPasswordValidationDisplayed(), "Password validation message should appear.");
+    }
+
+    @Test
+    public void TC_LOGIN_006_loginWithBlankUsernameAndPassword() {
+        LoginPage loginPage = new LoginPage(getDriver());
+
+        loginPage.login("", "");
+
+        Assert.assertTrue(loginPage.isUsernameValidationDisplayed(), "Username required validation should appear.");
+        Assert.assertTrue(loginPage.isPasswordValidationDisplayed(), "Password required validation should appear.");
+    }
+
+    @Test
+    public void TC_LOGIN_007_verifyLogoutFunctionality() {
+        HomePage homePage = loginAsManager();
+
+        LoginPage loginPage = homePage.logout();
+
+        Assert.assertTrue(loginPage.isLoginPageDisplayed(), "User should redirect to login page after logout.");
+    }
+
+    @Test
+    public void TC_LOGIN_008_verifySessionExpiresAfterLogout() {
+        HomePage homePage = loginAsManager();
+
+        homePage.logout();
+        getDriver().navigate().back();
+
+        Assert.assertFalse(homePage.isDashboardDisplayedNow(), "Dashboard should remain inaccessible after logout.");
     }
 }
